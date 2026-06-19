@@ -58,19 +58,62 @@ The project uses the [Chest X-Ray Images (Pneumonia) dataset](https://www.kaggle
 | **Test** | 234 | 390 | 624 |
 | **Total** | 1,583 | 4,273 | 5,856 |
 
-### Dataset Structure
+## 📂 Dataset Setup
+
+> ⚠️ **IMPORTANT:** The dataset is **NOT** uploaded to GitHub due to its large size (~1GB). You must download and place it manually.
+
+### Step 1: Download the Dataset
+
+Download the Chest X-Ray dataset from Kaggle:
+
+1. Go to: https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+2. Click **"Download"**
+3. Extract the zip file
+4. Move the extracted folder to: `dataset/chest_xray/`
+
+### Step 2: Verify Folder Structure
+
+After downloading, your project folder should look like this:
+
+```
+Pneumonia-classification-dip/
+│
+├── app.py
+├── chunk_2_train.py
+├── requirements.txt
+├── README.md
+├── .gitignore
+│
+└── dataset/
+    └── chest_xray/
+        ├── train/
+        │   ├── NORMAL/
+        │   │   └── [1,341 image files]
+        │   └── PNEUMONIA/
+        │       └── [3,875 image files]
+        ├── val/
+        │   ├── NORMAL/
+        │   │   └── [8 image files]
+        │   └── PNEUMONIA/
+        │       └── [8 image files]
+        └── test/
+            ├── NORMAL/
+            │   └── [234 image files]
+            └── PNEUMONIA/
+                └── [390 image files]
+```
+
+### Step 3: Verify the Path
+
+Make sure the dataset is located at:
+
 ```
 dataset/chest_xray/
-├── train/
-│   ├── NORMAL/      (1,341 images)
-│   └── PNEUMONIA/   (3,875 images)
-├── val/
-│   ├── NORMAL/      (8 images)
-│   └── PNEUMONIA/   (8 images)
-└── test/
-    ├── NORMAL/      (234 images)
-    └── PNEUMONIA/   (390 images)
 ```
+
+The training script (`chunk_2_train.py`) expects this exact path.
+
+---
 
 ## 🚀 Installation
 
