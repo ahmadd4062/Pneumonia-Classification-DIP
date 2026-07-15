@@ -6,4 +6,3 @@ opencv-python
 matplotlib
 scikit-learn
 protobuf
-python==3.10.0
