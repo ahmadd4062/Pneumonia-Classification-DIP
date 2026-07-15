@@ -1131,7 +1131,9 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     if uploaded_file is not None:
-        temp_path = "temp_uploaded_xray.jpg"
+        import tempfile
+        temp_dir = tempfile.mkdtemp()
+        temp_path = os.path.join(temp_dir, "temp_uploaded_xray.jpg")
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
