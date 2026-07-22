@@ -691,56 +691,18 @@ def compare_edge_detection(img):
 
 # ============== LOAD MODEL ==============
 @st.cache_resource
-@st.cache_resource
 def load_model():
-    import os
-    import tensorflow as tf
-    
-    # ---- DEBUG: Check file existence ----
-    st.write("### 🔍 Model Debug Info")
-    
-    # Check current directory
-    st.write(f"**Current directory:** `{os.getcwd()}`")
-    
-    # Check if models folder exists
-    if os.path.exists('models/'):
-        st.write(f"**models/ exists** - Files: `{os.listdir('models/')}`")
-    else:
-        st.write("❌ **models/ directory does NOT exist!**")
-    
-    # Check specific file
-    model_path = 'models/pneumonia_model.h5'
-    if os.path.exists(model_path):
-        size = os.path.getsize(model_path)
-        st.write(f"✅ **{model_path} exists** - Size: `{size:,} bytes` ({size/1024/1024:.2f} MB)")
-    else:
-        st.write(f"❌ **{model_path} does NOT exist!**")
-    
-    # Check absolute path
-    abs_path = os.path.abspath(model_path)
-    st.write(f"**Absolute path:** `{abs_path}`")
-    st.write(f"**Exists at absolute path:** `{os.path.exists(abs_path)}`")
-    st.write("---")
-    # ---- END DEBUG ----
-    
     model_paths = [
         'models/pneumonia_model.h5',
         'models/pneumonia_model_augmented.h5',
         '../models/pneumonia_model.h5',
     ]
-    
     for path in model_paths:
         if os.path.exists(path):
             try:
-                st.write(f"⏳ Loading model from `{path}`...")
-                model = tf.keras.models.load_model(path)
-                st.write("✅ **Model loaded successfully!**")
-                return model
-            except Exception as e:
-                st.write(f"❌ Error loading from `{path}`: `{str(e)}`")
+                return tf.keras.models.load_model(path)
+            except:
                 continue
-    
-    st.write("❌ **No model found!**")
     return None
 
 
