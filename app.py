@@ -692,17 +692,39 @@ def compare_edge_detection(img):
 # ============== LOAD MODEL ==============
 @st.cache_resource
 def load_model():
+    import os
+    import tensorflow as tf
+    
+    # Debug: Check current directory and files
+    st.write("### Debug - Model Loading")
+    st.write(f"Current directory: {os.getcwd()}")
+    
+    # Check if models folder exists
+    if os.path.exists('models/'):
+        st.write(f"Files in models/: {os.listdir('models/')}")
+    else:
+        st.write("❌ models/ directory does not exist!")
+    
     model_paths = [
         'models/pneumonia_model.h5',
         'models/pneumonia_model_augmented.h5',
         '../models/pneumonia_model.h5',
     ]
+    
     for path in model_paths:
-        if os.path.exists(path):
+        exists = os.path.exists(path)
+        st.write(f"Checking: {path} - {'✅ Exists' if exists else '❌ Not found'}")
+        if exists:
             try:
-                return tf.keras.models.load_model(path)
-            except:
+                st.write(f"Loading model from {path}...")
+                model = tf.keras.models.load_model(path)
+                st.write("✅ Model loaded successfully!")
+                return model
+            except Exception as e:
+                st.write(f"❌ Error: {str(e)}")
                 continue
+    
+    st.write("❌ No model found!")
     return None
 
 
