@@ -13,9 +13,9 @@ dataset/
 *.JPEG
 *.PNG
 
-# Model files
-models/
-*.h5
+# Model files - EXCLUDE all except the main model
+models/*.h5
+!models/pneumonia_model.h5
 *.hdf5
 *.pb
 *.ckpt
