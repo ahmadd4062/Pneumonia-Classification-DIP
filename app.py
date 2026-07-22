@@ -1176,12 +1176,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import os
-    import sys
-    # Check if running on Railway (has PORT environment variable)
-    if os.environ.get("PORT"):
-        import streamlit.web.cli as stcli
-        sys.argv = ["streamlit", "run", "app.py", "--server.port", os.environ.get("PORT"), "--server.address", "0.0.0.0", "--server.headless", "true"]
-        sys.exit(stcli.main())
-    else:
-        main()
+    main()
