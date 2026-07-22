@@ -3,6 +3,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "streamlit run app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true"
+    "startCommand": "streamlit run app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true",
+    "preDeployCommand": "mkdir -p /app/models && curl -L -o /app/models/pneumonia_model.h5 https://github.com/ahmadd4062/Pneumonia-Classification-DIP/releases/download/v1.0.0/pneumonia_model.h5"
   }
 }
