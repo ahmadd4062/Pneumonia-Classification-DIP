@@ -1,11 +1,6 @@
 import streamlit as st
-import cv2
-import numpy as np
-import tensorflow as tf
-from PIL import Image
-import os
-import matplotlib.pyplot as plt
 import time
+import os
 
 # ============== PAGE CONFIG (MUST BE FIRST) ==============
 st.set_page_config(
@@ -17,7 +12,7 @@ st.set_page_config(
 
 # ============== LOADING SPINNER FOR INITIAL APP START ==============
 with st.spinner('🫁 Loading PneumoScan... Please wait...'):
-    time.sleep(1)  # Brief initial load
+    time.sleep(1)
 
 # ============== CSS (your existing styles) ==============
 st.markdown("""
@@ -29,14 +24,12 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 
-/* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: #0f1117 !important;
     border-right: 1px solid #1e2530 !important;
 }
 [data-testid="stSidebar"] > div { padding-top: 0 !important; }
 
-/* ── Brand block ── */
 .brand-block {
     padding: 24px 20px 18px;
     border-bottom: 1px solid #1e2530;
@@ -99,7 +92,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .nav-divider { border: none; border-top: 1px solid #1e2530; margin: 14px 0; }
 
-/* ── Model info card ── */
 .model-info-card {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -154,7 +146,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .dev-note span { color: #7e8fa6; }
 
-/* ── Top bar ── */
 .topbar {
     padding: 18px 32px;
     background: #0f1117;
@@ -185,7 +176,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .badge-amber { background: rgba(247,201,72,0.1); color: #f7c948; border: 1px solid rgba(247,201,72,0.2); }
 .badge-red   { background: rgba(255,85,85,0.1);  color: #ff5555; border: 1px solid rgba(255,85,85,0.2); }
 
-/* ── Section header ── */
 .section-header {
     display: flex;
     align-items: center;
@@ -212,7 +202,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     margin-left: auto;
 }
 
-/* ── Upload zone ── */
 .upload-zone-wrap {
     border: 1px dashed #2a3441;
     border-radius: 16px;
@@ -264,7 +253,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     display: inline-block;
 }
 
-/* ── Step cards ── */
 .step-card {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -304,7 +292,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .tag-core     { background: rgba(0,212,170,0.08); color: #00d4aa; border: 1px solid rgba(0,212,170,0.2); }
 .tag-analysis { background: #1e2530; color: #7e8fa6; border: 1px solid #2a3441; }
 
-/* ── Diagnosis result ── */
 .diag-card {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -331,7 +318,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .label-pneumonia { color: #ff5555; }
 .diag-sub { font-size: 12px; color: #7e8fa6; line-height: 1.6; }
 
-/* ── Stat bars ── */
 .stat-bar-card {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -357,7 +343,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .stat-bar-fill-normal    { height: 100%; background: #3ddc84; border-radius: 2px; }
 .stat-bar-fill-pneumonia { height: 100%; background: #ff5555; border-radius: 2px; }
 
-/* ── Raw output box ── */
 .raw-output-box {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -383,7 +368,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     margin-top: 4px;
 }
 
-/* ── Edge card ── */
 .edge-card {
     background: #161b22;
     border: 1px solid #1e2530;
@@ -410,7 +394,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     letter-spacing: 0.05em;
 }
 
-/* ── Status bar ── */
 .status-bar {
     border-top: 1px solid #1e2530;
     padding: 10px 32px;
@@ -435,7 +418,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .status-sep { width: 1px; height: 12px; background: #1e2530; flex-shrink: 0; }
 .status-val { color: #7e8fa6; }
 
-/* ── Disclaimer ── */
 .disclaimer-bar {
     text-align: center;
     padding: 14px 32px;
@@ -446,7 +428,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .disclaimer-bar .warn { color: #f7c948; }
 
-/* ── Error box ── */
 .error-box {
     margin: 20px 32px;
     padding: 16px 20px;
@@ -457,7 +438,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     color: #ff5555;
 }
 
-/* ── Landing grid ── */
 .landing-wrap {
     padding: 40px 32px;
     max-width: 900px;
@@ -520,7 +500,6 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .disclaimer-card strong { color: #e8eaf0; }
 
-/* ── Streamlit widget theming ── */
 [data-testid="stFileUploader"] { background: transparent !important; }
 [data-testid="stFileUploader"] section {
     background: #161b22 !important;
@@ -544,16 +523,60 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .stSpinner > div { border-top-color: #00d4aa !important; }
 
-/* Force Streamlit p tags inside markdown not to collapse flex children */
 [data-testid="stMarkdownContainer"] p { margin: 0; }
 </style>
 """, unsafe_allow_html=True)
+
+
+# ============== LAZY IMPORTS ==============
+# These are only imported when needed (inside functions)
+
+def get_cv2():
+    """Lazy load cv2"""
+    if 'cv2' not in st.session_state:
+        import cv2
+        st.session_state.cv2 = cv2
+    return st.session_state.cv2
+
+
+def get_np():
+    """Lazy load numpy"""
+    if 'np' not in st.session_state:
+        import numpy as np
+        st.session_state.np = np
+    return st.session_state.np
+
+
+def get_tf():
+    """Lazy load tensorflow"""
+    if 'tf' not in st.session_state:
+        import tensorflow as tf
+        st.session_state.tf = tf
+    return st.session_state.tf
+
+
+def get_plt():
+    """Lazy load matplotlib"""
+    if 'plt' not in st.session_state:
+        import matplotlib.pyplot as plt
+        st.session_state.plt = plt
+    return st.session_state.plt
+
+
+def get_pil():
+    """Lazy load PIL"""
+    if 'PIL' not in st.session_state:
+        from PIL import Image
+        st.session_state.PIL = Image
+    return st.session_state.PIL
 
 
 # ============== HELPER FUNCTIONS ==============
 
 def preprocess_image(image_path, img_size=(224, 224)):
     """Load and preprocess image for DIP pipeline"""
+    cv2 = get_cv2()
+    np = get_np()
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         return None
@@ -563,6 +586,9 @@ def preprocess_image(image_path, img_size=(224, 224)):
 
 def enhance_image(img):
     """Apply enhancement: gamma correction + histogram equalization"""
+    cv2 = get_cv2()
+    np = get_np()
+    
     def gamma_correction(image, gamma=1.5):
         inv_gamma = 1.0 / gamma
         table = np.array([(i / 255.0) ** inv_gamma * 255 for i in range(256)]).astype("uint8")
@@ -575,6 +601,9 @@ def enhance_image(img):
 
 def full_dip_pipeline(image_path):
     """Full DIP pipeline returning all intermediate results"""
+    cv2 = get_cv2()
+    np = get_np()
+    
     original = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if original is None:
         return None
@@ -620,6 +649,8 @@ def visualize_results(results):
     if results is None:
         return
     
+    plt = get_plt()
+    np = get_np()
     fig, axes = plt.subplots(2, 4, figsize=(16, 8))
     
     steps = [
@@ -645,6 +676,10 @@ def visualize_results(results):
 
 def compare_edge_detection(img):
     """Compare Sobel vs Laplacian edge detection"""
+    cv2 = get_cv2()
+    np = get_np()
+    plt = get_plt()
+    
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
     sobel = np.uint8(np.clip(np.sqrt(sobelx**2 + sobely**2), 0, 255))
@@ -668,13 +703,14 @@ def compare_edge_detection(img):
 def get_model():
     """Lazy load the model - only loads when first needed"""
     if 'model' not in st.session_state:
-        with st.spinner('🧠 Loading AI Model... Please wait (10-15 seconds)...'):
+        with st.spinner('🧠 Loading AI Model (116 MB)... Please wait 10-15 seconds...'):
             st.session_state.model = load_model()
     return st.session_state.model
 
 
 def load_model():
     """Actual model loading function"""
+    tf = get_tf()
     model_paths = [
         'models/pneumonia_model.h5',
         'models/pneumonia_model_augmented.h5',
@@ -692,6 +728,9 @@ def load_model():
 # ============== DIP PIPELINE ==============
 def process_image_dip_steps(image_path):
     """Process image through DIP steps"""
+    cv2 = get_cv2()
+    np = get_np()
+    
     original = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if original is None:
         return None
@@ -732,6 +771,8 @@ def process_image_dip_steps(image_path):
 
 def predict_image(results, model):
     """Run prediction on processed image"""
+    cv2 = get_cv2()
+    np = get_np()
     img = cv2.resize(results['histogram'], (224, 224)) / 255.0
     img = img.reshape(1, 224, 224, 1)
     return float(model.predict(img, verbose=0)[0][0])
@@ -739,7 +780,6 @@ def predict_image(results, model):
 
 # ============== UI COMPONENTS ==============
 def render_sidebar(model_loaded: bool):
-    """Render sidebar with model status"""
     with st.sidebar:
         st.markdown("""
         <div class="brand-block">
@@ -789,7 +829,6 @@ def render_sidebar(model_loaded: bool):
 
 
 def render_topbar(model_loaded: bool):
-    """Render top bar"""
     model_badge = (
         '<span class="badge badge-green">● Model Loaded</span>'
         if model_loaded else
@@ -807,7 +846,6 @@ def render_topbar(model_loaded: bool):
 
 
 def render_upload_zone():
-    """Render upload zone"""
     st.markdown("""
     <div class="section-header">
         <div class="section-bar"></div>
@@ -834,7 +872,6 @@ def render_upload_zone():
 
 
 def render_pipeline(results):
-    """Renders all 9 DIP steps in a 3-column grid."""
     steps = [
         ("01", "Source Image", "Raw chest X-ray loaded as grayscale", "core", "original", ""),
         ("02", "Resize 224×224", "Standardized to 224×224 pixels for CNN input", "core", "resized", ""),
@@ -881,7 +918,6 @@ def render_pipeline(results):
 
 
 def render_diagnosis(prediction: float):
-    """Render diagnosis results"""
     is_pneumonia = prediction > 0.5
     conf = prediction if is_pneumonia else 1.0 - prediction
     pneu_pct = prediction
@@ -944,7 +980,10 @@ def render_diagnosis(prediction: float):
 
 
 def render_edge_comparison(img_gray: np.ndarray):
-    """Render edge detection comparison"""
+    cv2 = get_cv2()
+    np = get_np()
+    plt = get_plt()
+    
     sobelx = cv2.Sobel(img_gray, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(img_gray, cv2.CV_64F, 0, 1, ksize=3)
     sobel = np.uint8(np.clip(np.sqrt(sobelx**2 + sobely**2), 0, 255))
@@ -989,7 +1028,6 @@ def render_edge_comparison(img_gray: np.ndarray):
 
 
 def render_status_bar(model_loaded: bool, extra: str = ""):
-    """Render status bar"""
     status = "System ready" if model_loaded else "Model not loaded"
     parts = [
         '<span class="status-dot"></span>',
@@ -1023,7 +1061,6 @@ def render_status_bar(model_loaded: bool, extra: str = ""):
 
 
 def render_landing():
-    """Render landing page"""
     st.markdown('<div class="landing-wrap">', unsafe_allow_html=True)
     st.markdown("""
     <div class="landing-hero">
@@ -1085,9 +1122,6 @@ def render_landing():
 
 # ============== MAIN ==============
 def main():
-    # Don't load model here - use lazy loading
-    model_loaded = False
-    
     # Check if model file exists (without loading it)
     model_exists = False
     model_paths = [
@@ -1115,7 +1149,7 @@ def main():
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # --- LAZY LOAD: Only load model when image is uploaded ---
+        # LAZY LOAD: Only load model when image is uploaded
         model = get_model()
         model_loaded = model is not None
 
@@ -1154,7 +1188,7 @@ def main():
     else:
         render_landing()
 
-    render_status_bar(model_loaded)
+    render_status_bar(model_loaded if uploaded_file is not None else model_exists)
 
 
 if __name__ == "__main__":
