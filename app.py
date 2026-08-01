@@ -5,8 +5,9 @@ import tensorflow as tf
 from PIL import Image
 import os
 import matplotlib.pyplot as plt
+import time
 
-
+# ============== PAGE CONFIG (MUST BE FIRST) ==============
 st.set_page_config(
     page_title="PneumoScan · AI X-Ray Analysis",
     page_icon="🫁",
@@ -14,6 +15,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ============== LOADING SPINNER FOR INITIAL APP START ==============
+with st.spinner('🫁 Loading PneumoScan... Please wait...'):
+    time.sleep(1)  # Brief initial load
+
+# ============== CSS (your existing styles) ==============
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
@@ -544,12 +550,10 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 """, unsafe_allow_html=True)
 
 
-# ============== HELPER FUNCTIONS (FIXED) ==============
+# ============== HELPER FUNCTIONS ==============
 
 def preprocess_image(image_path, img_size=(224, 224)):
-    """
-    Load and preprocess image for DIP pipeline
-    """
+    """Load and preprocess image for DIP pipeline"""
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         return None
@@ -558,60 +562,38 @@ def preprocess_image(image_path, img_size=(224, 224)):
 
 
 def enhance_image(img):
-    """
-    Apply enhancement: gamma correction + histogram equalization
-    """
-    # Gamma correction
+    """Apply enhancement: gamma correction + histogram equalization"""
     def gamma_correction(image, gamma=1.5):
         inv_gamma = 1.0 / gamma
         table = np.array([(i / 255.0) ** inv_gamma * 255 for i in range(256)]).astype("uint8")
         return cv2.LUT(image, table)
     
     gamma_corrected = gamma_correction(img, gamma=1.5)
-    
-    # Histogram equalization
     enhanced = cv2.equalizeHist(gamma_corrected)
-    
     return enhanced
 
 
 def full_dip_pipeline(image_path):
-    """
-    Full DIP pipeline returning all intermediate results
-    """
+    """Full DIP pipeline returning all intermediate results"""
     original = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if original is None:
         return None
     
     resized = cv2.resize(original, (224, 224))
     
-    # Gamma correction
     def gamma_correction(img, gamma=1.5):
         table = np.array([(i / 255.0) ** (1.0 / gamma) * 255 for i in range(256)]).astype("uint8")
         return cv2.LUT(img, table)
     
     gamma_corrected = gamma_correction(resized, gamma=1.5)
-    
-    # Histogram Equalization
     hist_equalized = cv2.equalizeHist(gamma_corrected)
-    
-    # Laplacian edges
     laplacian = np.uint8(np.abs(cv2.Laplacian(hist_equalized, cv2.CV_64F)))
-    
-    # Binary threshold
     _, binary_thresh = cv2.threshold(hist_equalized, 127, 255, cv2.THRESH_BINARY)
-    
-    # Otsu threshold
-    otsu_val, otsu_thresh = cv2.threshold(
-        hist_equalized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-    )
-    
-    # Bit Plane Slicing (MSB plane 7)
+    otsu_val, otsu_thresh = cv2.threshold(hist_equalized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     bit_plane_7 = cv2.bitwise_and(hist_equalized, np.full_like(hist_equalized, 128))
     bit_plane_7 = np.where(bit_plane_7 > 0, 255, 0).astype(np.uint8)
     
-    # Histogram Stretching
-    p_low  = np.percentile(hist_equalized, 2)
+    p_low = np.percentile(hist_equalized, 2)
     p_high = np.percentile(hist_equalized, 98)
     if p_high > p_low:
         stretched = np.clip((hist_equalized.astype(np.float32) - p_low) / (p_high - p_low) * 255, 0, 255).astype(np.uint8)
@@ -619,24 +601,22 @@ def full_dip_pipeline(image_path):
         stretched = hist_equalized.copy()
     
     return {
-        'original':   original,
-        'resized':    resized,
-        'gamma':      gamma_corrected,
-        'histogram':  hist_equalized,
-        'edges':      laplacian,
-        'segmented':  binary_thresh,
-        'enhanced':   hist_equalized,  # Alias for compatibility
-        'otsu':       otsu_thresh,
-        'otsu_val':   int(otsu_val),
-        'bitplane':   bit_plane_7,
-        'stretched':  stretched,
+        'original': original,
+        'resized': resized,
+        'gamma': gamma_corrected,
+        'histogram': hist_equalized,
+        'edges': laplacian,
+        'segmented': binary_thresh,
+        'enhanced': hist_equalized,
+        'otsu': otsu_thresh,
+        'otsu_val': int(otsu_val),
+        'bitplane': bit_plane_7,
+        'stretched': stretched,
     }
 
 
 def visualize_results(results):
-    """
-    Display DIP pipeline results using matplotlib
-    """
+    """Display DIP pipeline results using matplotlib"""
     if results is None:
         return
     
@@ -664,15 +644,10 @@ def visualize_results(results):
 
 
 def compare_edge_detection(img):
-    """
-    Compare Sobel vs Laplacian edge detection
-    """
-    # Sobel
+    """Compare Sobel vs Laplacian edge detection"""
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
     sobel = np.uint8(np.clip(np.sqrt(sobelx**2 + sobely**2), 0, 255))
-    
-    # Laplacian
     laplacian = np.uint8(np.abs(cv2.Laplacian(img, cv2.CV_64F)))
     
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
@@ -689,9 +664,17 @@ def compare_edge_detection(img):
     return fig, sobel, laplacian
 
 
-# ============== LOAD MODEL ==============
-@st.cache_resource
+# ============== LAZY MODEL LOADING ==============
+def get_model():
+    """Lazy load the model - only loads when first needed"""
+    if 'model' not in st.session_state:
+        with st.spinner('🧠 Loading AI Model... Please wait (10-15 seconds)...'):
+            st.session_state.model = load_model()
+    return st.session_state.model
+
+
 def load_model():
+    """Actual model loading function"""
     model_paths = [
         'models/pneumonia_model.h5',
         'models/pneumonia_model_augmented.h5',
@@ -701,48 +684,32 @@ def load_model():
         if os.path.exists(path):
             try:
                 return tf.keras.models.load_model(path)
-            except:
+            except Exception as e:
                 continue
     return None
 
 
 # ============== DIP PIPELINE ==============
 def process_image_dip_steps(image_path):
-    """
-    Process image through DIP steps
-    """
+    """Process image through DIP steps"""
     original = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if original is None:
         return None
     resized = cv2.resize(original, (224, 224))
 
-    # ── Step 3: Gamma correction ──
     def gamma_correction(img, gamma=1.5):
         table = np.array([(i / 255.0) ** (1.0 / gamma) * 255 for i in range(256)]).astype("uint8")
         return cv2.LUT(img, table)
 
     gamma_corrected = gamma_correction(resized, gamma=1.5)
-
-    # ── Step 4: Histogram Equalization (CNN input) ──
     hist_equalized = cv2.equalizeHist(gamma_corrected)
-
-    # ── Step 5: Laplacian edge detection ──
     laplacian = np.uint8(np.abs(cv2.Laplacian(hist_equalized, cv2.CV_64F)))
-
-    # ── Step 6: Binary threshold ──
     _, binary_thresh = cv2.threshold(hist_equalized, 127, 255, cv2.THRESH_BINARY)
-
-    # ── NEW Step 7: Otsu Thresholding ──
-    otsu_val, otsu_thresh = cv2.threshold(
-        hist_equalized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-    )
-
-    # ── NEW Step 8: Bit Plane Slicing (MSB plane 7) ──
+    otsu_val, otsu_thresh = cv2.threshold(hist_equalized, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     bit_plane_7 = cv2.bitwise_and(hist_equalized, np.full_like(hist_equalized, 128))
     bit_plane_7 = np.where(bit_plane_7 > 0, 255, 0).astype(np.uint8)
-
-    # ── NEW Step 9: Histogram Stretching (contrast stretching) ──
-    p_low  = np.percentile(hist_equalized, 2)
+    
+    p_low = np.percentile(hist_equalized, 2)
     p_high = np.percentile(hist_equalized, 98)
     if p_high > p_low:
         stretched = np.clip((hist_equalized.astype(np.float32) - p_low) / (p_high - p_low) * 255, 0, 255).astype(np.uint8)
@@ -750,28 +717,29 @@ def process_image_dip_steps(image_path):
         stretched = hist_equalized.copy()
 
     return {
-        'original':   original,
-        'resized':    resized,
-        'gamma':      gamma_corrected,
-        'histogram':  hist_equalized,
-        'edges':      laplacian,
-        'segmented':  binary_thresh,
-        'otsu':       otsu_thresh,
-        'otsu_val':   int(otsu_val),
-        'bitplane':   bit_plane_7,
-        'stretched':  stretched,
+        'original': original,
+        'resized': resized,
+        'gamma': gamma_corrected,
+        'histogram': hist_equalized,
+        'edges': laplacian,
+        'segmented': binary_thresh,
+        'otsu': otsu_thresh,
+        'otsu_val': int(otsu_val),
+        'bitplane': bit_plane_7,
+        'stretched': stretched,
     }
 
 
-# ============== PREDICTION ==============
 def predict_image(results, model):
+    """Run prediction on processed image"""
     img = cv2.resize(results['histogram'], (224, 224)) / 255.0
     img = img.reshape(1, 224, 224, 1)
     return float(model.predict(img, verbose=0)[0][0])
 
 
-# ============== SIDEBAR ==============
+# ============== UI COMPONENTS ==============
 def render_sidebar(model_loaded: bool):
+    """Render sidebar with model status"""
     with st.sidebar:
         st.markdown("""
         <div class="brand-block">
@@ -794,7 +762,7 @@ def render_sidebar(model_loaded: bool):
         st.markdown('<hr class="nav-divider">', unsafe_allow_html=True)
 
         status_color = "#3ddc84" if model_loaded else "#ff5555"
-        status_text  = "Loaded" if model_loaded else "Not Found"
+        status_text = "Loaded" if model_loaded else "Not Found"
 
         st.markdown(f"""
         <div class="model-info-card">
@@ -820,8 +788,8 @@ def render_sidebar(model_loaded: bool):
         """, unsafe_allow_html=True)
 
 
-# ============== TOP BAR ==============
 def render_topbar(model_loaded: bool):
+    """Render top bar"""
     model_badge = (
         '<span class="badge badge-green">● Model Loaded</span>'
         if model_loaded else
@@ -838,8 +806,8 @@ def render_topbar(model_loaded: bool):
     """, unsafe_allow_html=True)
 
 
-# ============== UPLOAD SECTION ==============
 def render_upload_zone():
+    """Render upload zone"""
     st.markdown("""
     <div class="section-header">
         <div class="section-bar"></div>
@@ -865,20 +833,18 @@ def render_upload_zone():
     return st.file_uploader("", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
 
 
-# ============== DIP PIPELINE DISPLAY ==============
 def render_pipeline(results):
     """Renders all 9 DIP steps in a 3-column grid."""
-
     steps = [
-        ("01", "Source Image",            "Raw chest X-ray loaded as grayscale",                        "core",     "original",  ""),
-        ("02", "Resize 224×224",          "Standardized to 224×224 pixels for CNN input",               "core",     "resized",   ""),
-        ("03", "Gamma Correction",        "γ = 1.5 · boosts dark lung tissue details",                  "core",     "gamma",     ""),
-        ("04", "Histogram Equalization",  "Global contrast enhancement · used as CNN input",            "active",   "histogram", ""),
-        ("05", "Laplacian Edges",         "Second-order derivative · highlights fine structures",        "analysis", "edges",     ""),
-        ("06", "Binary Threshold",        "Fixed threshold T=127 · baseline segmentation",              "analysis", "segmented", ""),
-        ("07", "Otsu Threshold",          f"Auto threshold T={results['otsu_val']} · optimal class sep","analysis", "otsu",      "Otsu"),
-        ("08", "Bit-Plane Slice (MSB)",   "Plane 7 isolation · reveals dominant intensity structure",   "analysis", "bitplane",  "Bit-Plane"),
-        ("09", "Histogram Stretching",    "2–98 percentile stretch · maximises dynamic range",          "analysis", "stretched", "Stretch"),
+        ("01", "Source Image", "Raw chest X-ray loaded as grayscale", "core", "original", ""),
+        ("02", "Resize 224×224", "Standardized to 224×224 pixels for CNN input", "core", "resized", ""),
+        ("03", "Gamma Correction", "γ = 1.5 · boosts dark lung tissue details", "core", "gamma", ""),
+        ("04", "Histogram Equalization", "Global contrast enhancement · used as CNN input", "active", "histogram", ""),
+        ("05", "Laplacian Edges", "Second-order derivative · highlights fine structures", "analysis", "edges", ""),
+        ("06", "Binary Threshold", "Fixed threshold T=127 · baseline segmentation", "analysis", "segmented", ""),
+        ("07", "Otsu Threshold", f"Auto threshold T={results['otsu_val']} · optimal class sep", "analysis", "otsu", "Otsu"),
+        ("08", "Bit-Plane Slice (MSB)", "Plane 7 isolation · reveals dominant intensity structure", "analysis", "bitplane", "Bit-Plane"),
+        ("09", "Histogram Stretching", "2–98 percentile stretch · maximises dynamic range", "analysis", "stretched", "Stretch"),
     ]
 
     st.markdown("""
@@ -914,10 +880,10 @@ def render_pipeline(results):
                 st.image(results[img_key], use_container_width=True, clamp=True)
 
 
-# ============== DIAGNOSIS DISPLAY ==============
 def render_diagnosis(prediction: float):
+    """Render diagnosis results"""
     is_pneumonia = prediction > 0.5
-    conf     = prediction if is_pneumonia else 1.0 - prediction
+    conf = prediction if is_pneumonia else 1.0 - prediction
     pneu_pct = prediction
     norm_pct = 1.0 - prediction
 
@@ -931,11 +897,11 @@ def render_diagnosis(prediction: float):
     col_result, col_stats = st.columns([1, 1], gap="medium")
 
     with col_result:
-        ring_cls  = "ring-pneumonia" if is_pneumonia else "ring-normal"
-        icon      = "⚠️" if is_pneumonia else "✅"
-        label     = "PNEUMONIA" if is_pneumonia else "NORMAL"
+        ring_cls = "ring-pneumonia" if is_pneumonia else "ring-normal"
+        icon = "⚠️" if is_pneumonia else "✅"
+        label = "PNEUMONIA" if is_pneumonia else "NORMAL"
         label_cls = "label-pneumonia" if is_pneumonia else "label-normal"
-        sub_line  = (
+        sub_line = (
             f"Confidence: {conf:.1%} · Pneumonia markers detected"
             if is_pneumonia else
             f"Confidence: {conf:.1%} · No pneumonia markers detected"
@@ -977,11 +943,11 @@ def render_diagnosis(prediction: float):
         """, unsafe_allow_html=True)
 
 
-# ============== EDGE COMPARISON ==============
 def render_edge_comparison(img_gray: np.ndarray):
-    sobelx    = cv2.Sobel(img_gray, cv2.CV_64F, 1, 0, ksize=3)
-    sobely    = cv2.Sobel(img_gray, cv2.CV_64F, 0, 1, ksize=3)
-    sobel     = np.uint8(np.clip(np.sqrt(sobelx**2 + sobely**2), 0, 255))
+    """Render edge detection comparison"""
+    sobelx = cv2.Sobel(img_gray, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(img_gray, cv2.CV_64F, 0, 1, ksize=3)
+    sobel = np.uint8(np.clip(np.sqrt(sobelx**2 + sobely**2), 0, 255))
     laplacian = np.uint8(np.abs(cv2.Laplacian(img_gray, cv2.CV_64F)))
 
     st.markdown("""
@@ -1022,8 +988,8 @@ def render_edge_comparison(img_gray: np.ndarray):
         st.image(laplacian, use_container_width=True, clamp=True)
 
 
-# ============== STATUS BAR ==============
 def render_status_bar(model_loaded: bool, extra: str = ""):
+    """Render status bar"""
     status = "System ready" if model_loaded else "Model not loaded"
     parts = [
         '<span class="status-dot"></span>',
@@ -1056,8 +1022,8 @@ def render_status_bar(model_loaded: bool, extra: str = ""):
     )
 
 
-# ============== LANDING PAGE ==============
 def render_landing():
+    """Render landing page"""
     st.markdown('<div class="landing-wrap">', unsafe_allow_html=True)
     st.markdown("""
     <div class="landing-hero">
@@ -1119,11 +1085,23 @@ def render_landing():
 
 # ============== MAIN ==============
 def main():
-    model = load_model()
-    model_loaded = model is not None
-
-    render_sidebar(model_loaded)
-    render_topbar(model_loaded)
+    # Don't load model here - use lazy loading
+    model_loaded = False
+    
+    # Check if model file exists (without loading it)
+    model_exists = False
+    model_paths = [
+        'models/pneumonia_model.h5',
+        'models/pneumonia_model_augmented.h5',
+        '../models/pneumonia_model.h5',
+    ]
+    for path in model_paths:
+        if os.path.exists(path):
+            model_exists = True
+            break
+    
+    render_sidebar(model_exists)
+    render_topbar(model_exists)
 
     with st.container():
         st.markdown('<div style="padding: 0 32px;">', unsafe_allow_html=True)
@@ -1136,6 +1114,10 @@ def main():
         temp_path = os.path.join(temp_dir, "temp_uploaded_xray.jpg")
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
+
+        # --- LAZY LOAD: Only load model when image is uploaded ---
+        model = get_model()
+        model_loaded = model is not None
 
         if not model_loaded:
             st.markdown("""
