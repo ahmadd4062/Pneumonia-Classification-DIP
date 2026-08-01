@@ -529,10 +529,8 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 
 # ============== LAZY IMPORTS ==============
-# These are only imported when needed (inside functions)
 
 def get_cv2():
-    """Lazy load cv2"""
     if 'cv2' not in st.session_state:
         import cv2
         st.session_state.cv2 = cv2
@@ -540,7 +538,6 @@ def get_cv2():
 
 
 def get_np():
-    """Lazy load numpy"""
     if 'np' not in st.session_state:
         import numpy as np
         st.session_state.np = np
@@ -548,7 +545,6 @@ def get_np():
 
 
 def get_tf():
-    """Lazy load tensorflow"""
     if 'tf' not in st.session_state:
         import tensorflow as tf
         st.session_state.tf = tf
@@ -556,27 +552,16 @@ def get_tf():
 
 
 def get_plt():
-    """Lazy load matplotlib"""
     if 'plt' not in st.session_state:
         import matplotlib.pyplot as plt
         st.session_state.plt = plt
     return st.session_state.plt
 
 
-def get_pil():
-    """Lazy load PIL"""
-    if 'PIL' not in st.session_state:
-        from PIL import Image
-        st.session_state.PIL = Image
-    return st.session_state.PIL
-
-
 # ============== HELPER FUNCTIONS ==============
 
 def preprocess_image(image_path, img_size=(224, 224)):
-    """Load and preprocess image for DIP pipeline"""
     cv2 = get_cv2()
-    np = get_np()
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         return None
@@ -585,7 +570,6 @@ def preprocess_image(image_path, img_size=(224, 224)):
 
 
 def enhance_image(img):
-    """Apply enhancement: gamma correction + histogram equalization"""
     cv2 = get_cv2()
     np = get_np()
     
@@ -600,7 +584,6 @@ def enhance_image(img):
 
 
 def full_dip_pipeline(image_path):
-    """Full DIP pipeline returning all intermediate results"""
     cv2 = get_cv2()
     np = get_np()
     
@@ -645,7 +628,6 @@ def full_dip_pipeline(image_path):
 
 
 def visualize_results(results):
-    """Display DIP pipeline results using matplotlib"""
     if results is None:
         return
     
@@ -675,7 +657,6 @@ def visualize_results(results):
 
 
 def compare_edge_detection(img):
-    """Compare Sobel vs Laplacian edge detection"""
     cv2 = get_cv2()
     np = get_np()
     plt = get_plt()
@@ -701,7 +682,6 @@ def compare_edge_detection(img):
 
 # ============== LAZY MODEL LOADING ==============
 def get_model():
-    """Lazy load the model - only loads when first needed"""
     if 'model' not in st.session_state:
         with st.spinner('🧠 Loading AI Model (116 MB)... Please wait 10-15 seconds...'):
             st.session_state.model = load_model()
@@ -709,7 +689,6 @@ def get_model():
 
 
 def load_model():
-    """Actual model loading function"""
     tf = get_tf()
     model_paths = [
         'models/pneumonia_model.h5',
@@ -720,14 +699,13 @@ def load_model():
         if os.path.exists(path):
             try:
                 return tf.keras.models.load_model(path)
-            except Exception as e:
+            except Exception:
                 continue
     return None
 
 
 # ============== DIP PIPELINE ==============
 def process_image_dip_steps(image_path):
-    """Process image through DIP steps"""
     cv2 = get_cv2()
     np = get_np()
     
@@ -770,7 +748,6 @@ def process_image_dip_steps(image_path):
 
 
 def predict_image(results, model):
-    """Run prediction on processed image"""
     cv2 = get_cv2()
     np = get_np()
     img = cv2.resize(results['histogram'], (224, 224)) / 255.0
@@ -979,7 +956,7 @@ def render_diagnosis(prediction: float):
         """, unsafe_allow_html=True)
 
 
-def render_edge_comparison(img_gray: np.ndarray):
+def render_edge_comparison(img_gray):
     cv2 = get_cv2()
     np = get_np()
     plt = get_plt()
