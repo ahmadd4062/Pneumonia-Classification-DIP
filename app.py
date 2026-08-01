@@ -524,6 +524,21 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .stSpinner > div { border-top-color: #00d4aa !important; }
 
 [data-testid="stMarkdownContainer"] p { margin: 0; }
+
+/* Loading overlay z-index fix */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(8, 9, 12, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -680,11 +695,81 @@ def compare_edge_detection(img):
     return fig, sobel, laplacian
 
 
-# ============== LAZY MODEL LOADING ==============
+# ============== LAZY MODEL LOADING WITH OVERLAY ==============
 def get_model():
+    """Lazy load the model with full-screen overlay"""
     if 'model' not in st.session_state:
-        with st.spinner('🧠 Loading AI Model (116 MB)... Please wait 10-15 seconds...'):
-            st.session_state.model = load_model()
+        # Create a placeholder for the overlay
+        overlay = st.empty()
+        
+        # Show full-screen loading overlay
+        with overlay.container():
+            st.markdown("""
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(8, 9, 12, 0.95);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 99999;
+            ">
+                <div style="
+                    font-size: 72px;
+                    margin-bottom: 20px;
+                ">🫁</div>
+                <div style="
+                    font-family: 'Syne', sans-serif;
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #00d4aa;
+                    margin-bottom: 12px;
+                ">Loading AI Model</div>
+                <div style="
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 16px;
+                    color: #7e8fa6;
+                    margin-bottom: 30px;
+                ">Please wait 10-15 seconds...</div>
+                <div style="
+                    width: 60px;
+                    height: 60px;
+                    border: 4px solid #1e2530;
+                    border-top: 4px solid #00d4aa;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <div style="
+                    margin-top: 20px;
+                    font-family: 'DM Mono', monospace;
+                    font-size: 12px;
+                    color: #4a5568;
+                ">⚡ Model size: 116 MB</div>
+                <div style="
+                    margin-top: 8px;
+                    font-family: 'DM Mono', monospace;
+                    font-size: 11px;
+                    color: #2a3441;
+                ">Initializing TensorFlow...</div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Load the model
+        st.session_state.model = load_model()
+        
+        # Clear the overlay
+        overlay.empty()
+    
     return st.session_state.model
 
 
@@ -748,11 +833,16 @@ def process_image_dip_steps(image_path):
 
 
 def predict_image(results, model):
+    """Run prediction on processed image with loading spinner"""
     cv2 = get_cv2()
     np = get_np()
-    img = cv2.resize(results['histogram'], (224, 224)) / 255.0
-    img = img.reshape(1, 224, 224, 1)
-    return float(model.predict(img, verbose=0)[0][0])
+    
+    with st.spinner('🧠 Analyzing X-ray with AI...'):
+        img = cv2.resize(results['histogram'], (224, 224)) / 255.0
+        img = img.reshape(1, 224, 224, 1)
+        prediction = float(model.predict(img, verbose=0)[0][0])
+    
+    return prediction
 
 
 # ============== UI COMPONENTS ==============
@@ -1147,8 +1237,7 @@ def main():
             st.markdown('<div style="padding: 0 32px;">', unsafe_allow_html=True)
             render_pipeline(results)
 
-            with st.spinner("Running CNN inference…"):
-                prediction = predict_image(results, model)
+            prediction = predict_image(results, model)
 
             render_diagnosis(prediction)
             render_edge_comparison(results['histogram'])
